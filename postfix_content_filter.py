@@ -34,8 +34,8 @@ def main():
     base_url = 'http://127.0.0.1:5000'
 
     # Credentials for authentication
-    username = 'test'
-    password = 'test'
+    username = 'poc@user.com'
+    password = 'POCPass123!'
 
     # Login endpoint URL
     login_url = f'{base_url}/login'
@@ -65,8 +65,8 @@ def main():
 
 
         # Process the response
-        json_format = json.loads(response_email.text)
-        if json_format["verdict"] == 'REJECT':
+        logging.info("response:%s\n", response_email.json())
+        if response_email.json()['verdict'] == 'REJECT':
             logging.info('Verdict: Reject\n')
             sys.exit(1)
 
