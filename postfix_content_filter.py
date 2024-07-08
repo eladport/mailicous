@@ -28,10 +28,9 @@ def email_to_json(email_message):
 def main():
     logging.basicConfig(filename='/var/log/postfix_content_filter.log', level=logging.INFO)
     raw_email = sys.stdin.read()
-    logging.info('Received message:\n%s', raw_email)
+    logging.info('Received mail:\n%s', raw_email)
     email_message = BytesParser(policy=policy.default).parsebytes(raw_email.encode('utf-8'))
     email_json = email_to_json(email_message)
-    logging.info('JSON message:\n%s', email_json)
     base_url = 'http://127.0.0.1:5000'
 
     # Credentials for authentication
@@ -52,9 +51,9 @@ def main():
 
     # Check if login was successful
     if response.status_code == 200:
-        # Extract the access token from the response
+
+        #Extract the access token from the response
         access_token = response.json()['access_token']
-        #print(f"Access Token: {access_token}")
         headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json'
@@ -63,13 +62,16 @@ def main():
         response_email = requests.post(detection_server_url,headers=headers, data={
             'email': email_json
             })
-        #print(email_json)
+
 
         # Process the response
-        if response.text.strip() == 'REJECT':
+        json_format = json.loads(response_email.text)
+        if json_format["verdict"] == 'REJECT':
+            logging.info('Verdict: Reject\n')
             sys.exit(1)
 
         else:
+            logging.info('Verdict: Accept\n')
             sys.exit(0)
 
     else:
