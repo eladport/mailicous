@@ -5,8 +5,8 @@ from email.mime.text import MIMEText
 # Email configuration
 smtp_server = 'localhost'
 smtp_port = 25  # Change to 25 if you're using the standard SMTP port
-sender_email = 'sender_test@example.com'
-receiver_email = 'recipient_test@example.com'
+sender_email = 'bob@example.com'
+receiver_email = 'alice@example.com'
 dkim_signature = """v=1; a=rsa-sha256; c=relaxed/simple; d=example.com; s=default;
   t=1620244561; bh=47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=;
   h=From:To:Subject:Date:Message-ID;
@@ -25,17 +25,10 @@ body_benign = """
        """
 spf_result = 'pass (example.com: domain of sender@example.com designates 192.0.2.1 as permitted sender)'
 
-subject_malicious = 'malicious mail'
-SAFE_PLACEHOLDER = "<<safe_placeholder>>"
-# splitted with safe placeholder to avoid clicking
-MAL_URL = "https://url" + SAFE_PLACEHOLDER + "z.fr/q2Py"
+subject_malicious = 'Crypto offer for 500$!!'
 
 MALICIOUS_EMAIL_CONTENT = f"""
-                        Hey all!
-                        unfortunatly our wonderful boss is leaving us for another company,
-                        he gave us a nice goodbye present right here:
-                        {MAL_URL.replace(SAFE_PLACEHOLDER, "")}
-                        please get in and help yourself!
+                        One time offer! this offer won't repeat!
                         """
 
 # Create the MIME email
