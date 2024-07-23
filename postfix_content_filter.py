@@ -4,31 +4,51 @@ import json
 import requests
 from email import policy
 from email.parser import BytesParser
+from email.mime.text import MIMEText
+import smtplib
 import logging
 
 def email_to_json(email_message):
     def get_body(message):
         if message.is_multipart():
             for part in message.iter_parts():
-                if part.get_content_type() == "text/plain":
-                    return part.get_payload(decode=True).decode('utf-8', errors='ignore')
+            
+                # skip on the first content type because we need the second
+                if "===============" not in part.get_content_type():
+                
+                    # return content type and body
+                    return (part.get_content_type(),part.get_payload(decode=True).decode('utf-8', errors='ignore'))
         else:
-            return message.get_payload(decode=True).decode('utf-8', errors='ignore')
+            return (message.get_content_type(),message.get_payload(decode=True).decode('utf-8', errors='ignore'))
 
     email_json = {
         "from": email_message["From"],
         "to": email_message["To"],
         "subject": email_message["Subject"],
         "date": email_message["Date"],
-        "body": get_body(email_message)
+        "DKIM-Signature": email_message['DKIM-Signature'],
+        "Received-SPF": email_message['Received-SPF'],
+        "Content-Type": get_body(email_message)[0],
+        "body": get_body(email_message)[1]
     }
 
     return json.dumps(email_json, indent=4)
 
+def send_rejection_email(sender):
+    msg = MIMEText("Your email has been rejected by our policy.")
+    msg["Subject"] = "Email Rejected"
+    msg["From"] = "noreply@example.com"
+    msg["To"] = sender
+
+    with smtplib.SMTP("localhost") as server:
+        server.sendmail("noreply@example.com", [sender], msg.as_string())
+        
 def main():
     logging.basicConfig(filename='/var/log/postfix_content_filter.log', level=logging.INFO)
     raw_email = sys.stdin.read()
     logging.info('Received mail:\n%s', raw_email)
+    
+    # parse the email and select the intresting fields as JSON
     email_message = BytesParser(policy=policy.default).parsebytes(raw_email.encode('utf-8'))
     email_json = email_to_json(email_message)
     base_url = 'http://127.0.0.1:5000'
@@ -68,6 +88,7 @@ def main():
         logging.info("response:%s\n", response_email.json())
         if response_email.json()['verdict'] == 'REJECT':
             logging.info('Verdict: Reject\n')
+            send_rejection_email(response_email.json()['from'])
             sys.exit(1)
 
         else:

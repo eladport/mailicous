@@ -41,7 +41,7 @@ msg_benign['Received-SPF'] = f'{spf_result} receiver={receiver_email}; client-ip
 msg_benign['DKIM-Signature'] = dkim_signature
 
 msg_malicious = MIMEMultipart()
-msg_malicious['From'] = sender_email
+msg_malicious['From'] = "bob@gmail.com"
 msg_malicious['To'] = receiver_email
 msg_malicious['Subject'] = subject_malicious
 msg_malicious.attach(MIMEText(MALICIOUS_EMAIL_CONTENT, 'plain'))
