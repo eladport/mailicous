@@ -1,13 +1,15 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 # Email configuration
 smtp_server = 'localhost'
 smtp_port = 25  # Change to 25 if you're using the standard SMTP port
-sender_email = 'bob@example.com'
-receiver_email = 'alice@example.com'
-second_sender_email = 'bob@gmail.com'
+sender_email = 'sender_test@example.com'
+receiver_email = 'recipient_test@example.com'
+attachment_path = "/home/cs402/Mailicious/scripts/example_file.txt"
 dkim_signature = """v=1; a=rsa-sha256; c=relaxed/simple; d=example.com; s=default;
   t=1620244561; bh=47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=;
   h=From:To:Subject:Date:Message-ID;
@@ -26,10 +28,17 @@ body_benign = """
        """
 spf_result = 'pass (example.com: domain of sender@example.com designates 192.0.2.1 as permitted sender)'
 
-subject_malicious = 'Crypto offer for 500$!!'
+subject_malicious = 'malicious mail'
+SAFE_PLACEHOLDER = "<<safe_placeholder>>"
+# splitted with safe placeholder to avoid clicking
+MAL_URL = "https://url" + SAFE_PLACEHOLDER + "z.fr/q2Py"
 
 MALICIOUS_EMAIL_CONTENT = f"""
-                        One time offer! this offer won't repeat!
+                        Hey all!
+                        unfortunatly our wonderful boss is leaving us for another company,
+                        he gave us a nice goodbye present right here:
+                        {MAL_URL.replace(SAFE_PLACEHOLDER, "")}
+                        please get in and help yourself!
                         """
 
 # Create the MIME email
@@ -41,8 +50,18 @@ msg_benign.attach(MIMEText(body_benign, 'plain'))
 msg_benign['Received-SPF'] = f'{spf_result} receiver={receiver_email}; client-ip=192.0.2.1; envelope-from={sender_email}; helo=mail.sender.com;'
 msg_benign['DKIM-Signature'] = dkim_signature
 
+# add the attachment to the mail
+with open(attachment_path, 'rb') as attachment:
+    part = MIMEBase('application', 'octet-stream')
+    part.set_payload(attachment.read())
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', f'attachment; filename={attachment_path.split("/")[-1]}')
+
+    msg_benign.attach(part)
+    
+    
 msg_malicious = MIMEMultipart()
-msg_malicious['From'] = second_sender_email
+msg_malicious['From'] = sender_email
 msg_malicious['To'] = receiver_email
 msg_malicious['Subject'] = subject_malicious
 msg_malicious.attach(MIMEText(MALICIOUS_EMAIL_CONTENT, 'plain'))

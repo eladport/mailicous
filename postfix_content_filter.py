@@ -5,22 +5,38 @@ import requests
 from email import policy
 from email.parser import BytesParser
 from email.mime.text import MIMEText
+from email import encoders
 import smtplib
 import logging
 
 def email_to_json(email_message):
     def get_body(message):
         if message.is_multipart():
+            payloads = []
             for part in message.iter_parts():
             
                 # skip on the first content type because we need the second
                 if "===============" not in part.get_content_type():
                 
                     # return content type and body
-                    return (part.get_content_type(),part.get_payload(decode=True).decode('utf-8', errors='ignore'))
+                    payloads.append((part.get_content_type(),part.get_payload(decode=True).decode('utf-8', errors='ignore')))
+            return payloads
         else:
-            return (message.get_content_type(),message.get_payload(decode=True).decode('utf-8', errors='ignore'))
-
+            return [(message.get_content_type(),message.get_payload(decode=True).decode('utf-8', errors='ignore'))]
+    
+    # parse content type and body in case of a message with attachment
+    email_content = get_body(email_message)
+    content_type = email_content[0][0]
+    body = email_content[0][1]
+    file_content_type = []
+    attachment = []
+    
+    # in case of multiple attachments, add them to a list
+    if len(email_content) > 1:
+        for i in range(1,len(email_content)):
+            file_content_type.append(email_content[i][0])
+            attachment.append((base64.b64encode(email_content[i][1].encode())).decode())
+    
     email_json = {
         "from": email_message["From"],
         "to": email_message["To"],
@@ -28,14 +44,16 @@ def email_to_json(email_message):
         "date": email_message["Date"],
         "DKIM-Signature": email_message['DKIM-Signature'],
         "Received-SPF": email_message['Received-SPF'],
-        "Content-Type": get_body(email_message)[0],
-        "body": get_body(email_message)[1]
+        "Content-Type": content_type,
+        "body": body,
+        "file_content_type" : file_content_type,
+        "attachment": attachment
     }
 
     return json.dumps(email_json, indent=4)
 
-def send_rejection_email(sender):
-    msg = MIMEText("Your email has been rejected by our policy.")
+def send_rejection_email(sender,policy):
+    msg = MIMEText(f"Your email has been rejected by our policy {policy}.")
     msg["Subject"] = "Email Rejected"
     msg["From"] = "noreply@example.com"
     msg["To"] = sender
@@ -88,7 +106,7 @@ def main():
         logging.info("response:%s\n", response_email.json())
         if response_email.json()['verdict'] == 'REJECT':
             logging.info('Verdict: Reject\n')
-            send_rejection_email(response_email.json()['from'])
+            send_rejection_email(response_email.json()['from'],response_email.json()['policy'])
             sys.exit(1)
 
         else:
