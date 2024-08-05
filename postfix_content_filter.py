@@ -50,10 +50,11 @@ def email_to_json(email_message):
         "attachment": attachment
     }
 
-    return json.dumps(email_json, indent=4)
+    # return mail fields as json, accept unicode characters
+    return json.dumps(email_json, indent=4,ensure_ascii=False)
 
-def send_rejection_email(sender,policy):
-    msg = MIMEText(f"Your email has been rejected by our policy {policy}.")
+def send_rejection_email(sender):
+    msg = MIMEText(f"Your email has been rejected.")
     msg["Subject"] = "Email Rejected"
     msg["From"] = "noreply@example.com"
     msg["To"] = sender
@@ -106,7 +107,7 @@ def main():
         logging.info("response:%s\n", response_email.json())
         if response_email.json()['verdict'] == 'REJECT':
             logging.info('Verdict: Reject\n')
-            send_rejection_email(response_email.json()['from'],response_email.json()['policy'])
+            #send_rejection_email(response_email.json()['from'])
             sys.exit(1)
 
         else:
