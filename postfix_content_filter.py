@@ -28,14 +28,12 @@ def email_to_json(email_message):
     email_content = get_body(email_message)
     content_type = email_content[0][0]
     body = email_content[0][1]
-    file_content_type = []
     attachment = []
     
     # in case of multiple attachments, add them to a list
     if len(email_content) > 1:
         for i in range(1,len(email_content)):
-            file_content_type.append(email_content[i][0])
-            attachment.append((base64.b64encode(email_content[i][1].encode())).decode())
+            attachment.append(((email_content[i][0]),(base64.b64encode(email_content[i][1].encode())).decode()))
     
     email_json = {
         "from": email_message["From"],
@@ -46,7 +44,6 @@ def email_to_json(email_message):
         "Received-SPF": email_message['Received-SPF'],
         "Content-Type": content_type,
         "body": body,
-        "file_content_type" : file_content_type,
         "attachment": attachment
     }
 

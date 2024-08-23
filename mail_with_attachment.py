@@ -3,6 +3,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+import mimetypes
 
 # Email configuration
 smtp_server = 'localhost'
@@ -52,7 +53,8 @@ msg_benign['DKIM-Signature'] = dkim_signature
 
 # add the attachment to the mail
 with open(attachment_path, 'rb') as attachment:
-    part = MIMEBase('application', 'octet-stream')
+    mime_type, encoding = mimetypes.guess_type(attachment_path)
+    part = MIMEBase(mime_type.split('/')[0],mime_type.split('/')[1] )
     part.set_payload(attachment.read())
     encoders.encode_base64(part)
     part.add_header('Content-Disposition', f'attachment; filename={attachment_path.split("/")[-1]}')
