@@ -9,7 +9,10 @@ from email import encoders
 import smtplib
 import logging
 
+# parse SMTP email to JSON
 def email_to_json(email_message):
+
+    # get body of mail message
     def get_body(message):
         if message.is_multipart():
             payloads = []
@@ -49,12 +52,6 @@ def email_to_json(email_message):
 
     # return mail fields as json, accept unicode characters
     return json.dumps(email_json, indent=4,ensure_ascii=False)
-
-def send_rejection_email(sender):
-    msg = MIMEText(f"Your email has been rejected.")
-    msg["Subject"] = "Email Rejected"
-    msg["From"] = "noreply@example.com"
-    msg["To"] = sender
 
     with smtplib.SMTP("localhost") as server:
         server.sendmail("noreply@example.com", [sender], msg.as_string())
@@ -104,7 +101,6 @@ def main():
         logging.info("response:%s\n", response_email.json())
         if response_email.json()['verdict'] == 'REJECT':
             logging.info('Verdict: Reject\n')
-            #send_rejection_email(response_email.json()['from'])
             sys.exit(1)
 
         else:
